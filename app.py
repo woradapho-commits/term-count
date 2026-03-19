@@ -16,25 +16,9 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-
-# ─── ติดตั้ง dependency เพิ่มเติมหากยังไม่มี ───────────────────────────────
-try:
-    from docx import Document
-except ImportError:
-    import subprocess, sys
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "python-docx"])
-    from docx import Document
-
-try:
-    import nltk
-    from nltk import pos_tag
-    from nltk.tokenize import word_tokenize
-except ImportError:
-    import subprocess, sys
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "nltk"])
-    import nltk
-    from nltk import pos_tag
-    from nltk.tokenize import word_tokenize
+from docx import Document
+import nltk
+from nltk import pos_tag
 
 # ─── ดาวน์โหลด NLTK data ที่จำเป็น ─────────────────────────────────────────
 @st.cache_resource
