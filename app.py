@@ -449,10 +449,14 @@ if uploaded_file is not None:
     # แสดง badge chips
     badge_html = ""
     for _, row in pos_summary.iterrows():
+        color = row["สี"]
+        label = row["หมวดหมู่"]
+        total = int(row["total"])
+        wcount = int(row["word_count"])
         badge_html += (
-            f"<span class='pos-badge' style='background:{row[\"สี\"]}22; "
-            f"color:{row[\"สี\"]}; border:1px solid {row[\"สี\"]}55;'>"
-            f"{row['หมวดหมู่']} — {int(row['total']):,} ครั้ง ({int(row['word_count'])} คำ)</span>"
+            f"<span class='pos-badge' style='background:{color}22; "
+            f"color:{color}; border:1px solid {color}55;'>"
+            f"{label} — {total:,} ครั้ง ({wcount} คำ)</span>"
         )
     st.markdown(badge_html, unsafe_allow_html=True)
 
