@@ -20,6 +20,40 @@ from docx import Document
 import nltk
 from nltk import pos_tag
 
+import urllib.request
+import matplotlib.font_manager as fm
+import os
+
+# ─── โหลด Font ภาษาไทย (Sarabun) สำหรับ matplotlib ────────────────────────
+@st.cache_resource
+def setup_thai_font():
+    font_path = "/tmp/Sarabun-Regular.ttf"
+    if not os.path.exists(font_path):
+        url = "https://github.com/google/fonts/raw/main/ofl/sarabun/Sarabun-Regular.ttf"
+        try:
+            urllib.request.urlretrieve(url, font_path)
+        except Exception:
+            return None
+    try:
+        fm.fontManager.addfont(font_path)
+        prop = fm.FontProperties(fname=font_path)
+        plt.rcParams["font.family"] = prop.get_name()
+        return prop.get_name()
+    except Exception:
+        return None
+
+THAI_FONT_NAME = setup_thai_font()
+
+def apply_thai_font(ax, title_size=14, label_size=11, tick_size=11):
+    """ตั้ง font ภาษาไทยให้ทุก text element ใน Axes"""
+    if THAI_FONT_NAME is None:
+        return
+    fp = fm.FontProperties(family=THAI_FONT_NAME)
+    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label]
+                 + ax.get_xticklabels() + ax.get_yticklabels()):
+        item.set_fontproperties(fp)
+
+
 # ─── ดาวน์โหลด NLTK data ที่จำเป็น ─────────────────────────────────────────
 @st.cache_resource
 def download_nltk_data():
@@ -254,11 +288,23 @@ def plot_bar_chart(df: pd.DataFrame, top_n: int, color_by_pos: bool, default_col
         spine.set_visible(False)
     ax.axvline(0, color="#3a3d4a", linewidth=1)
     ax.grid(axis="x", color="#2a2d35", linewidth=0.7, linestyle="--")
-    ax.set_xlabel("จำนวนครั้งที่ปรากฏ", color="#9a9488", fontsize=11, labelpad=10)
-    ax.set_title(
-        f"Top {top_n} คำที่ใช้บ่อยที่สุด",
-        color="#e8e3d9", fontsize=14, fontweight="bold", pad=16,
-    )
+
+    # ─── ตั้งค่า font ภาษาไทย ───
+    if THAI_FONT_NAME:
+        fp = fm.FontProperties(family=THAI_FONT_NAME)
+        fp_bold = fm.FontProperties(family=THAI_FONT_NAME, weight="bold")
+        ax.set_xlabel("จำนวนครั้งที่ปรากฏ", color="#9a9488", fontsize=11, labelpad=10)
+        ax.xaxis.label.set_fontproperties(fp)
+        ax.xaxis.label.set_color("#9a9488")
+        ax.set_title(f"Top {top_n} คำที่ใช้บ่อยที่สุด", color="#e8e3d9", fontsize=14, pad=16)
+        ax.title.set_fontproperties(fp_bold)
+        ax.title.set_color("#e8e3d9")
+        for lbl in ax.get_yticklabels():
+            lbl.set_fontproperties(fp)
+            lbl.set_color("#c8c2b4")
+    else:
+        ax.set_xlabel("จำนวนครั้งที่ปรากฏ", color="#9a9488", fontsize=11, labelpad=10)
+        ax.set_title(f"Top {top_n} คำที่ใช้บ่อยที่สุด", color="#e8e3d9", fontsize=14, fontweight="bold", pad=16)
 
     # ─── Legend สำหรับ POS ───
     if color_by_pos:
@@ -267,7 +313,7 @@ def plot_bar_chart(df: pd.DataFrame, top_n: int, color_by_pos: bool, default_col
             if row["หมวดหมู่"] not in seen:
                 seen[row["หมวดหมู่"]] = row["สี"]
         patches = [mpatches.Patch(color=c, label=l) for l, c in seen.items()]
-        ax.legend(
+        legend = ax.legend(
             handles=patches,
             loc="lower right",
             framealpha=0.15,
@@ -276,6 +322,11 @@ def plot_bar_chart(df: pd.DataFrame, top_n: int, color_by_pos: bool, default_col
             facecolor="#1c1f29",
             edgecolor="#3a3d4a",
         )
+        if THAI_FONT_NAME:
+            fp_leg = fm.FontProperties(family=THAI_FONT_NAME, size=9)
+            for text in legend.get_texts():
+                text.set_fontproperties(fp_leg)
+                text.set_color("#c8c2b4")
 
     plt.tight_layout()
     return fig
@@ -304,18 +355,36 @@ def plot_pos_pie(df: pd.DataFrame) -> plt.Figure:
         pctdistance=0.75,
     )
 
-    for t in texts:
-        t.set_color("#c8c2b4")
-        t.set_fontsize(9)
-    for at in autotexts:
-        at.set_color("#0f1117")
-        at.set_fontsize(8)
-        at.set_fontweight("bold")
+    # ─── ตั้งค่า font ภาษาไทยสำหรับ label และ title ───
+    if THAI_FONT_NAME:
+        fp = fm.FontProperties(family=THAI_FONT_NAME, size=9)
+        fp_bold = fm.FontProperties(family=THAI_FONT_NAME, weight="bold", size=13)
+        for t in texts:
+            t.set_fontproperties(fp)
+            t.set_color("#c8c2b4")
+        for at in autotexts:
+            at.set_fontsize(8)
+            at.set_color("#0f1117")
+            at.set_fontweight("bold")
+        ax.set_title(
+            "สัดส่วน Part of Speech (ตามจำนวนครั้ง)",
+            color="#e8e3d9", fontsize=13, pad=14,
+        )
+        ax.title.set_fontproperties(fp_bold)
+        ax.title.set_color("#e8e3d9")
+    else:
+        for t in texts:
+            t.set_color("#c8c2b4")
+            t.set_fontsize(9)
+        for at in autotexts:
+            at.set_color("#0f1117")
+            at.set_fontsize(8)
+            at.set_fontweight("bold")
+        ax.set_title(
+            "สัดส่วน Part of Speech (ตามจำนวนครั้ง)",
+            color="#e8e3d9", fontsize=13, fontweight="bold", pad=14,
+        )
 
-    ax.set_title(
-        "สัดส่วน Part of Speech (ตามจำนวนครั้ง)",
-        color="#e8e3d9", fontsize=13, fontweight="bold", pad=14,
-    )
     plt.tight_layout()
     return fig
 
