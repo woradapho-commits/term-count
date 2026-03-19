@@ -432,20 +432,27 @@ if uploaded_file is not None:
     st.divider()
     st.markdown("### 🏷️ สรุปหมวดหมู่ Part of Speech")
 
-    pos_summary = (
-        df_all.groupby(["หมวดหมู่", "สี"])
-        .agg(จำนวนคำไม่ซ้ำ=("คำ", "count"), จำนวนครั้งรวม=("จำนวนครั้ง", "sum"))
+    pos_total = (
+        df_all.groupby(["หมวดหมู่", "สี"])["จำนวนครั้ง"]
+        .sum()
         .reset_index()
-        .sort_values("จำนวนครั้งรวม", ascending=False)
+        .rename(columns={"จำนวนครั้ง": "total"})
     )
+    pos_wcount = (
+        df_all.groupby("หมวดหมู่")["คำ"]
+        .count()
+        .reset_index()
+        .rename(columns={"คำ": "word_count"})
+    )
+    pos_summary = pos_total.merge(pos_wcount, on="หมวดหมู่").sort_values("total", ascending=False)
 
-    # แสดง badge chips + ตาราง summary แบบ 2 คอลัมน์
+    # แสดง badge chips
     badge_html = ""
     for _, row in pos_summary.iterrows():
         badge_html += (
-            f"<span class='pos-badge' style='background:{row['สี']}22; "
-            f"color:{row['สี']}; border:1px solid {row['สี']}55;'>"
-            f"{row['หมวดหมู่']} — {row['จำนวนครั้งรวม']:,} ครั้ง ({row['จำนวนคำไม่ซ้ำ']} คำ)</span>"
+            f"<span class='pos-badge' style='background:{row[\"สี\"]}22; "
+            f"color:{row[\"สี\"]}; border:1px solid {row[\"สี\"]}55;'>"
+            f"{row['หมวดหมู่']} — {int(row['total']):,} ครั้ง ({int(row['word_count'])} คำ)</span>"
         )
     st.markdown(badge_html, unsafe_allow_html=True)
 
