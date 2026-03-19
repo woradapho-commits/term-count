@@ -616,6 +616,63 @@ if uploaded_file is not None:
             f"พร้อมคอลัมน์: ลำดับ, คำ, จำนวนครั้ง, หมวดหมู่, POS Tag, สัดส่วน (%)"
         )
 
+
+    # ─── 10. คำที่ยาวที่สุดและสั้นที่สุด ────────────────────────────
+    st.divider()
+    st.markdown("### 📏 คำที่ยาวที่สุดและสั้นที่สุด")
+
+    df_len = df_all.copy()
+    df_len["ความยาว"] = df_len["คำ"].str.len()
+
+    top_longest_n = 10
+    top_shortest_n = 10
+
+    col_long, col_short = st.columns(2)
+
+    with col_long:
+        st.markdown("#### 🔠 คำที่ยาวที่สุด")
+        df_longest = (
+            df_len.sort_values(["ความยาว", "จำนวนครั้ง"], ascending=[False, False])
+            .drop_duplicates(subset="คำ")
+            .head(top_longest_n)
+            .reset_index(drop=True)
+        )
+        df_longest.index += 1
+        st.dataframe(
+            df_longest[["คำ", "ความยาว", "จำนวนครั้ง", "หมวดหมู่"]],
+            use_container_width=True,
+            column_config={
+                "ความยาว": st.column_config.ProgressColumn(
+                    "ความยาว (ตัวอักษร)",
+                    min_value=0,
+                    max_value=int(df_len["ความยาว"].max()),
+                    format="%d",
+                ),
+            },
+        )
+
+    with col_short:
+        st.markdown("#### 🔡 คำที่สั้นที่สุด")
+        df_shortest = (
+            df_len.sort_values(["ความยาว", "จำนวนครั้ง"], ascending=[True, False])
+            .drop_duplicates(subset="คำ")
+            .head(top_shortest_n)
+            .reset_index(drop=True)
+        )
+        df_shortest.index += 1
+        st.dataframe(
+            df_shortest[["คำ", "ความยาว", "จำนวนครั้ง", "หมวดหมู่"]],
+            use_container_width=True,
+            column_config={
+                "ความยาว": st.column_config.ProgressColumn(
+                    "ความยาว (ตัวอักษร)",
+                    min_value=0,
+                    max_value=int(df_len["ความยาว"].max()),
+                    format="%d",
+                ),
+            },
+        )
+
     # ─── 9. Preview ข้อความต้นฉบับ ───────────────────────────────
     with st.expander("🔍 ดูข้อความต้นฉบับ (Preview)"):
         preview = raw_text[:3000] + ("..." if len(raw_text) > 3000 else "")
